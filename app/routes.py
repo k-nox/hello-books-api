@@ -26,7 +26,7 @@ def handle_books():
 @books_bp.route("/<book_id>", methods=["GET", "PUT", "DELETE"])
 def handle_book(book_id):
 
-    book = Book.query.get(book_id)
+    book = Book.query.get_or_404(book_id)
 
     if request.method == "GET":
         return book.to_dict()
