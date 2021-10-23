@@ -27,8 +27,4 @@ def handle_books():
 def handle_book(book_id):
     book = Book.query.get(book_id)
 
-    return {
-        "id": book.id,
-        "title": book.title,
-        "description": book.description
-    }
+    return book.to_dict()
