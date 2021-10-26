@@ -5,30 +5,30 @@ from flask import Blueprint, jsonify, make_response, request
 books_bp = Blueprint("books", __name__, url_prefix="/books")
 
 
-@books_bp.route("", methods=["GET", "POST"])
-def handle_books():
-    if request.method == "GET":
+@books_bp.route("", methods=["GET"])
+def read_books():
+    title_query = request.args.get("title")
+    if title_query:
+        books = Book.query.filter_by(title=title_query)
+    else:
+        books = Book.query.all()
+    return jsonify([book.to_dict() for book in books])
 
-        title_query = request.args.get("title")
-        if title_query:
-            books = Book.query.filter_by(title=title_query)
-        else:
-            books = Book.query.all()
-        books_response = [{"id": book.id, "title": book.title,
-                           "description": book.description} for book in books]
-        return jsonify(books_response)
-    elif request.method == "POST":
-        request_body = request.get_json()
-        new_book = Book(title=request_body["title"],
-                        description=request_body["description"])
 
+@books_bp.route("", methods=["POST"])
+def create_book():
+    request_body = request.get_json()
+    try:
+        new_book = Book(
+            title=request_body["title"], description=request_body["description"])
         db.session.add(new_book)
         db.session.commit()
-
         return make_response(f"Book {new_book.title} successfully created", 201)
+    except:
+        return make_response("invalid book data to create book", 400)
 
 
-@books_bp.route("/<book_id>", methods=["GET", "PUT", "DELETE"])
+@ books_bp.route("/<book_id>", methods=["GET", "PUT", "DELETE"])
 def handle_book(book_id):
 
     book = Book.query.get(book_id)
