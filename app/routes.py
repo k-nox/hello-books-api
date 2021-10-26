@@ -1,6 +1,6 @@
 from app import db
 from app.models.book import Book
-from flask import Blueprint, jsonify, make_response, request
+from flask import Blueprint, jsonify, make_response, request, abort
 
 books_bp = Blueprint("books", __name__, url_prefix="/books")
 
@@ -28,25 +28,36 @@ def create_book():
         return make_response("invalid book data to create book", 400)
 
 
-@ books_bp.route("/<book_id>", methods=["GET", "PUT", "DELETE"])
-def handle_book(book_id):
+def get_book_by_id(book_id):
+    try:
+        book_id = int(book_id)
+    except:
+        abort(400, "invalid id")
+    return Book.query.get_or_404(book_id)
 
-    book = Book.query.get(book_id)
-    if book is None:
-        return make_response("", 404)
 
-    if request.method == "GET":
-        return book.to_dict()
-    elif request.method == "PUT":
-        form_data = request.get_json()
+@books_bp.route("/<book_id>", methods=["GET"])
+def read_book(book_id):
+    book = get_book_by_id(book_id)
+    return jsonify(book.to_dict())
 
-        book.title = form_data["title"]
-        book.description = form_data["description"]
 
-        db.session.commit()
+@books_bp.route("/<book_id>", methods=["PATCH"])
+def update_book(book_id):
+    book = get_book_by_id(book_id)
+    request_body = request.get_json()
+    if "title" in request_body:
+        book.title = request_body["title"]
+    if "description" in request_body:
+        book.description = request_body["description"]
+    db.session.commit()
 
-        return make_response(f"Book #{book.id} successfully updated")
-    elif request.method == "DELETE":
-        db.session.delete(book)
-        db.session.commit()
-        return make_response(f"Book #{book.id} successfully deleted")
+    return make_response(f"Book #{book.id} successfully updated", 200)
+
+
+@books_bp.route("/<book_id>", methods=["DELETE"])
+def delete_book(book_id):
+    book = get_book_by_id(book_id)
+    db.session.delete(book)
+    db.session.commit()
+    return make_response(f"Book #{book.id} successfully deleted", 200)
